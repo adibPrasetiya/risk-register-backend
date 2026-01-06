@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { publicRoute } from '../routers/public.route.js';
+import { apiRoute } from '../routers/api.route.js';
 import { errorMiddleware } from '../middlewares/error.middleware.js';
 
 export const app = express();
@@ -10,5 +11,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(publicRoute);
+app.use(apiRoute);
 
 app.use(errorMiddleware);

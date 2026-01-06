@@ -29,10 +29,11 @@ describe('User Registration API - POST /users', () => {
         .send(validUser)
         .expect(201);
 
-      expect(response.body.data).toHaveProperty('id');
-      expect(response.body.data.username).toBe(validUser.username);
-      expect(response.body.data.email).toBe(validUser.email);
-      expect(response.body.data).not.toHaveProperty('password');
+      expect(response.body.data.user).toHaveProperty('id');
+      expect(response.body.data.user.username).toBe(validUser.username);
+      expect(response.body.data.user.email).toBe(validUser.email);
+      expect(response.body.data.user).not.toHaveProperty('password');
+      expect(response.body.data).toHaveProperty('accessToken');
     });
   });
 

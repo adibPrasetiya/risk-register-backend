@@ -12,7 +12,7 @@
     "type-check": "echo 'No type checking in JavaScript' && exit 0",
     "seed": "node prisma/seed.js",
     "db:seed": "npx prisma db seed",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
