@@ -1,0 +1,61 @@
+{
+  "name": "risk-register",
+  "version": "1.0.0",
+  "description": "backend untuk aplikasi risk register",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/main.js",
+    "start": "node src/main.js",
+    "build": "echo 'No build needed for JavaScript' && exit 0",
+    "build:clean": "echo 'No build needed for JavaScript' && exit 0",
+    "type-check": "echo 'No type checking in JavaScript' && exit 0",
+    "seed": "node prisma/seed.js",
+    "db:seed": "npx prisma db seed",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    },
+    "testMatch": [
+      "**/__tests__/**/*.js",
+      "**/?(*.)+(spec|test).js"
+    ],
+    "coverageDirectory": "coverage",
+    "verbose": true
+  },
+  "dependencies": {
+    "@prisma/client": "^6.10.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "joi": "^18.0.2",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.28.5",
+    "babel-jest": "^30.2.0",
+    "cross-env": "^10.1.0",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.10",
+    "prisma": "^6.11.1",
+    "rimraf": "^6.1.2",
+    "supertest": "^7.1.4"
+  },
+  "keywords": [
+    "ExpressJS",
+    "Prisma",
+    "Joi",
+    "MySQL"
+  ],
+  "author": "D311 House Builder",
+  "license": "ISC"
+}

@@ -1,0 +1,48 @@
+import Joi from 'joi';
+
+export const createNewUser = Joi.object({
+  username: Joi.string()
+    .min(3)
+    .max(255)
+    .pattern(/^[a-zA-Z0-9_]+$/)
+    .lowercase()
+    .required()
+    .messages({
+      'string.empty': 'Username tidak boleh kosong',
+      'string.min': 'Username minimal 3 karakter',
+      'string.max': 'Username maksimal 255 karakter',
+      'string.pattern.base':
+        'Username hanya boleh berisi huruf, angka, dan underscore',
+      'any.required': 'Username wajib diisi',
+    }),
+
+  full_name: Joi.string().min(2).max(255).required().messages({
+    'string.empty': 'Nama tidak boleh kosong',
+    'string.min': 'Nama minimal 2 karakter',
+    'string.max': 'Nama maksimal 255 karakter',
+    'any.required': 'Nama wajib diisi',
+  }),
+
+  email: Joi.string().email().max(255).required().messages({
+    'string.empty': 'Email tidak boleh kosong',
+    'string.email': 'Format email tidak valid',
+    'string.max': 'Email maksimal 255 karakter',
+    'any.required': 'Email wajib diisi',
+  }),
+
+  password: Joi.string()
+    .min(8)
+    .max(255)
+    .pattern(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_\-+=])[A-Za-z\d@$!%*?&#^()_\-+=]+$/
+    )
+    .required()
+    .messages({
+      'string.empty': 'Password tidak boleh kosong',
+      'string.min': 'Password minimal 8 karakter',
+      'string.max': 'Password maksimal 255 karakter',
+      'string.pattern.base':
+        'Password harus mengandung minimal 1 huruf kecil, 1 huruf kapital, 1 angka, dan 1 karakter spesial (@$!%*?&#^()_-+=)',
+      'any.required': 'Password wajib diisi',
+    }),
+});
