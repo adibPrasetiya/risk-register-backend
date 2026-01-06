@@ -50,7 +50,7 @@ describe('User Login API - POST /users/login', () => {
     const response = await request(app)
       .post('/users/login')
       .send({
-        username: 'testuser',
+        identifier: 'testuser',
         password: 'Test@123456'
       })
       .expect(200);
@@ -78,7 +78,7 @@ describe('User Login API - POST /users/login', () => {
     const response = await request(app)
       .post('/users/login')
       .send({
-        username: 'test@example.com', // sending email in username field
+        identifier: 'test@example.com', // sending email in identifier field
         password: 'Test@123456'
       })
       .expect(200);
@@ -92,7 +92,7 @@ describe('User Login API - POST /users/login', () => {
     const response = await request(app)
       .post('/users/login')
       .send({
-        username: 'testuser',
+        identifier: 'testuser',
         password: 'WrongPassword'
       })
       .expect(401);
@@ -104,7 +104,7 @@ describe('User Login API - POST /users/login', () => {
     const response = await request(app)
       .post('/users/login')
       .send({
-        username: 'unknown',
+        identifier: 'unknown',
         password: 'AnyPassword'
       })
       .expect(401);
@@ -116,7 +116,7 @@ describe('User Login API - POST /users/login', () => {
     // First Login
     const login1 = await request(app)
       .post('/users/login')
-      .send({ username: 'testuser', password: 'Test@123456' })
+      .send({ identifier: 'testuser', password: 'Test@123456' })
       .expect(200);
     
     const token1 = login1.headers['set-cookie'][0];
@@ -124,7 +124,7 @@ describe('User Login API - POST /users/login', () => {
     // Second Login
     const login2 = await request(app)
       .post('/users/login')
-      .send({ username: 'testuser', password: 'Test@123456' })
+      .send({ identifier: 'testuser', password: 'Test@123456' })
       .expect(200);
 
     // Verify only 1 session exists

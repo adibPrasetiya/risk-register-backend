@@ -43,8 +43,8 @@ const login = async (reqBody, userAgentInfo = {}) => {
   const user = await prismaClient.user.findFirst({
     where: {
       OR: [
-        { username: validatedData.username },
-        { email: validatedData.username },
+        { username: validatedData.identifier },
+        { email: validatedData.identifier },
       ],
     },
     include: {

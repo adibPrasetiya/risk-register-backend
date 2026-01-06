@@ -1,26 +1,26 @@
 import jwt from 'jsonwebtoken';
-
-const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || 'secret_key_change_me';
-const REFRESH_TOKEN_SECRET =
-  process.env.JWT_REFRESH_SECRET || 'refresh_secret_key_change_me';
-const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
+import {
+  JWT_SECRET,
+  JWT_REFRESH_SECRET,
+  ACCESS_TOKEN_EXPIRY,
+  REFRESH_TOKEN_EXPIRY,
+} from '../config/constant.js';
 
 const generateAccessToken = (payload) => {
-  return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
+  return jwt.sign(payload, JWT_SECRET, {
     expiresIn: ACCESS_TOKEN_EXPIRY,
   });
 };
 
 const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, REFRESH_TOKEN_SECRET, {
+  return jwt.sign(payload, JWT_REFRESH_SECRET, {
     expiresIn: REFRESH_TOKEN_EXPIRY,
   });
 };
 
 const verifyAccessToken = (token) => {
   try {
-    return jwt.verify(token, ACCESS_TOKEN_SECRET);
+    return jwt.verify(token, JWT_SECRET);
   } catch (error) {
     return null;
   }
@@ -28,7 +28,7 @@ const verifyAccessToken = (token) => {
 
 const verifyRefreshToken = (token) => {
   try {
-    return jwt.verify(token, REFRESH_TOKEN_SECRET);
+    return jwt.verify(token, JWT_REFRESH_SECRET);
   } catch (error) {
     return null;
   }

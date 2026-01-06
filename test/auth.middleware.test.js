@@ -36,7 +36,7 @@ describe('Auth Middleware & Logout', () => {
     // Login to get token
     const response = await request(app)
       .post('/users/login')
-      .send({ username: 'authtest', password: 'Test@123456' });
+      .send({ identifier: 'authtest', password: 'Test@123456' });
     
     token = response.body.data.accessToken;
   });
