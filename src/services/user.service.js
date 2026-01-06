@@ -5,46 +5,14 @@ import { createNewUser, loginUser } from '../validators/user.validation.js';
 import { validate } from '../validators/validator.js';
 import tokenUtil from '../utils/token.util.js';
 
-const updateOrCreateSession = async (userId, userAgentInfo) => {
-  const refreshToken = tokenUtil.generateRefreshToken({ id: userId });
-  
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-  await prismaClient.session.upsert({
-    where: {
-      userId: userId,
-    },
-    update: {
-      refreshToken: refreshToken,
-      expiresAt: expiresAt,
-      deviceId: userAgentInfo.deviceId || 'unknown',
-      deviceName: userAgentInfo.deviceName,
-      userAgent: userAgentInfo.userAgent,
-      ipAddress: userAgentInfo.ipAddress,
-    },
-    create: {
-      userId: userId,
-      refreshToken: refreshToken,
-      expiresAt: expiresAt,
-      deviceId: userAgentInfo.deviceId || 'unknown',
-      deviceName: userAgentInfo.deviceName,
-      userAgent: userAgentInfo.userAgent,
-      ipAddress: userAgentInfo.ipAddress,
-    },
-  });
-
-  return refreshToken;
-};
-
-const login = async (reqBody, userAgentInfo = {}) => {
+const login = async (reqBody, req) => {
   const validatedData = validate(loginUser, reqBody);
 
   const user = await prismaClient.user.findFirst({
     where: {
       OR: [
-        { username: validatedData.identifier },
-        { email: validatedData.identifier },
+        { username: validatedData.username },
+        { email: validatedData.username },
       ],
     },
     include: {
@@ -69,16 +37,20 @@ const login = async (reqBody, userAgentInfo = {}) => {
     throw new ResponseError(401, 'Username atau password salah');
   }
 
+  if (!user.is_active) {
+    throw new ResponseError(403, 'Akun Anda belum aktif. Silakan hubungi administrator.');
+  }
+
   // Create JWT Payload
   const jwtPayload = {
-    id: user.id,
+    userId: user.id,
     username: user.username,
     email: user.email,
     roles: user.userRoles.map((ur) => ur.role.name),
   };
 
   const accessToken = tokenUtil.generateAccessToken(jwtPayload);
-  const refreshToken = await updateOrCreateSession(user.id, userAgentInfo);
+  const refreshToken = await tokenUtil.updateOrCreateSession(user.id, req);
 
   return {
     accessToken,
@@ -86,7 +58,7 @@ const login = async (reqBody, userAgentInfo = {}) => {
   };
 };
 
-const registration = async (reqBody, userAgentInfo = {}) => {
+const registration = async (reqBody, req) => {
   const validatedData = validate(createNewUser, reqBody);
 
   const existingUsername = await prismaClient.user.findUnique({
@@ -155,14 +127,14 @@ const registration = async (reqBody, userAgentInfo = {}) => {
 
   // Auto-login (Generate Tokens)
   const jwtPayload = {
-    id: result.id,
+    userId: result.id,
     username: result.username,
     email: result.email,
     roles: ['USER'], // Or fetch from result.userRoles if needed
   };
 
   const accessToken = tokenUtil.generateAccessToken(jwtPayload);
-  const refreshToken = await updateOrCreateSession(result.id, userAgentInfo);
+  const refreshToken = await tokenUtil.updateOrCreateSession(result.id, req);
 
   return {
     message: 'Registrasi user berhasil',
@@ -184,6 +156,16 @@ const registration = async (reqBody, userAgentInfo = {}) => {
 };
 
 const logout = async (userId) => {
+  const session = await prismaClient.session.findUnique({
+    where: {
+      userId: userId,
+    },
+  });
+
+  if (!session) {
+    throw new ResponseError(404, 'Session not found');
+  }
+
   await prismaClient.session.delete({
     where: {
       userId: userId,

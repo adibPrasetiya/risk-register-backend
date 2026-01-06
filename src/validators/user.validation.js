@@ -48,7 +48,7 @@ export const createNewUser = Joi.object({
 });
 
 export const loginUser = Joi.object({
-  identifier: Joi.string().required().messages({
+  username: Joi.string().required().messages({
     'string.empty': 'Username atau Email tidak boleh kosong',
     'any.required': 'Username atau Email wajib diisi',
   }),
