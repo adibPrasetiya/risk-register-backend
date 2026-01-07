@@ -12,7 +12,7 @@
     "type-check": "echo 'No type checking in JavaScript' && exit 0",
     "seed": "node prisma/seed.js",
     "db:seed": "npx prisma db seed",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
@@ -34,6 +34,7 @@
   "dependencies": {
     "@prisma/client": "^6.10.1",
     "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",

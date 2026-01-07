@@ -46,3 +46,14 @@ export const createNewUser = Joi.object({
       'any.required': 'Password wajib diisi',
     }),
 });
+
+export const loginUser = Joi.object({
+  username: Joi.string().required().messages({
+    'string.empty': 'Username atau Email tidak boleh kosong',
+    'any.required': 'Username atau Email wajib diisi',
+  }),
+  password: Joi.string().required().messages({
+    'string.empty': 'Password tidak boleh kosong',
+    'any.required': 'Password wajib diisi',
+  }),
+});

@@ -9,6 +9,11 @@ const routes = [
     path: '/users',
     handler: userController.create,
   },
+  {
+    method: 'post',
+    path: '/users/login',
+    handler: userController.login,
+  },
 ];
 
 routes.forEach(({ method, path, handler }) => {
