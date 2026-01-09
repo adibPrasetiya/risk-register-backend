@@ -40,7 +40,12 @@ const verifyAccessToken = (token) => {
 
 export const getRefreshTokenExpiry = () => {
   const expiryDate = new Date();
-  expiryDate.setHours(expiryDate.getHours() + REFRESH_TOKEN_EXPIRY);
+  // Handle '7d', '1d', etc.
+  const hours = REFRESH_TOKEN_EXPIRY.endsWith("d")
+    ? parseInt(REFRESH_TOKEN_EXPIRY.slice(0, -1)) * 24
+    : parseInt(REFRESH_TOKEN_EXPIRY);
+    
+  expiryDate.setHours(expiryDate.getHours() + hours);
   return expiryDate;
 };
 

@@ -16,21 +16,36 @@ datasource db {
 model User {
   id                   String     @id @default(uuid())
   username             String     @unique @db.VarChar(255)
-  full_name            String     @db.VarChar(255)
   email                String     @unique @db.VarChar(255)
   password             String     @db.VarChar(255)
   is_active            Boolean    @default(false)
   is_verified          Boolean    @default(false)
   password_changed_at  DateTime?
   must_change_password Boolean    @default(false)
+  totp_secret          String?    @db.VarChar(255)
+  totp_enabled         Boolean    @default(false)
   created_at           DateTime   @default(now())
   updated_at           DateTime   @updatedAt
   userRoles            UserRole[]
   sessions             Session[]
+  profile              Profile?
 
   @@index([email])
   @@index([username])
   @@map("users")
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String?  @db.VarChar(255)
+  bio       String?  @db.Text
+  avatar    String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
 }
 
 model Role {

@@ -56,4 +56,49 @@ export const loginUser = Joi.object({
     'string.empty': 'Password tidak boleh kosong',
     'any.required': 'Password wajib diisi',
   }),
+  totpCode: Joi.string().length(6).optional().messages({
+    'string.length': 'Kode TOTP harus 6 digit',
+  }),
+});
+
+export const updateUserProfile = Joi.object({
+  fullName: Joi.string().min(2).max(255).optional().messages({
+    'string.min': 'Nama minimal 2 karakter',
+    'string.max': 'Nama maksimal 255 karakter',
+  }),
+  bio: Joi.string().max(1000).optional().allow(''),
+  avatar: Joi.string().uri().max(255).optional().allow(''),
+  email: Joi.string().email().max(255).optional().messages({
+    'string.email': 'Format email tidak valid',
+    'string.max': 'Email maksimal 255 karakter',
+  }),
+});
+
+export const changeUserPassword = Joi.object({
+  oldPassword: Joi.string().required(),
+  newPassword: Joi.string()
+    .min(8)
+    .max(255)
+    .pattern(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_\-+=])[A-Za-z\d@$!%*?&#^()_\-+=]+$/
+    )
+    .required()
+    .messages({
+      'string.min': 'Password minimal 8 karakter',
+      'string.pattern.base':
+        'Password harus mengandung minimal 1 huruf kecil, 1 huruf kapital, 1 angka, dan 1 karakter spesial',
+    }),
+});
+
+export const verifyTotp = Joi.object({
+  token: Joi.string().length(6).required().messages({
+    'string.length': 'Kode TOTP harus 6 digit',
+    'any.required': 'Token wajib diisi',
+  }),
+});
+
+export const adminResetPassword = Joi.object({
+  identifier: Joi.string().required().messages({
+    'any.required': 'Username atau Email wajib diisi',
+  }),
 });

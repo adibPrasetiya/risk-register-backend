@@ -9,7 +9,7 @@ export const errorMiddleware = (err, _req, res, next) => {
 
   if (err instanceof ValidationError) {
     res.status(err.statusCode).json({
-      errors: err.message,
+      errors: err.details.map((d) => d.detail).join(", "),
       details: err.details,
     });
   } else if (err instanceof ResponseError) {

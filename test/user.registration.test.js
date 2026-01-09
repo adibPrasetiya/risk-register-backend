@@ -377,7 +377,7 @@ describe('User Registration API - POST /users', () => {
           .send({
             username: 'testuser',
             email: 'test@example.com',
-            password: 'Test123!!!',
+            password: 'Test123~~~',
             full_name: 'Test User',
           })
           .expect(400);
@@ -837,9 +837,10 @@ describe('User Registration API - POST /users', () => {
 
       const user = await prismaClient.user.findUnique({
         where: { username: 'xssuser' },
+        include: { profile: true },
       });
 
-      expect(user.full_name).toBe(xssPayload);
+      expect(user.profile.fullName).toBe(xssPayload);
     });
 
     it('should handle very long input strings (boundary test)', async () => {

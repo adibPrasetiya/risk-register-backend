@@ -59,4 +59,72 @@ const logout = async (req, res, next) => {
   }
 };
 
-export default { create, login, logout };
+const updateProfile = async (req, res, next) => {
+  try {
+    const result = await userService.updateProfile(req.user.id, req.body);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const result = await userService.changePassword(req.user.id, req.body);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const generate2FA = async (req, res, next) => {
+  try {
+    const result = await userService.generate2FA(req.user.id);
+    res.status(200).json({
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const enable2FA = async (req, res, next) => {
+  try {
+    const result = await userService.enable2FA(req.user.id, req.body.token);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const disable2FA = async (req, res, next) => {
+  try {
+    const result = await userService.disable2FA(req.user.id);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const adminResetPassword = async (req, res, next) => {
+  try {
+    // Check if requester is admin (should be done in middleware usually, but checking roles here just in case or relying on route middleware)
+    // Assuming route middleware handles role check.
+    const result = await userService.adminResetPassword(req.body.identifier);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { 
+  create, 
+  login, 
+  logout,
+  updateProfile,
+  changePassword,
+  generate2FA,
+  enable2FA,
+  disable2FA,
+  adminResetPassword
+};
