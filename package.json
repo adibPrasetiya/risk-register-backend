@@ -28,8 +28,54 @@
       "**/__tests__/**/*.js",
       "**/?(*.)+(spec|test).js"
     ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/coverage/",
+      "/dist/"
+    ],
     "coverageDirectory": "coverage",
-    "verbose": true
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!src/main.js",
+      "!src/app/server.js",
+      "!src/**/*.config.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 85,
+        "statements": 85
+      },
+      "./src/controllers/": {
+        "branches": 90,
+        "functions": 95,
+        "lines": 95,
+        "statements": 95
+      },
+      "./src/services/": {
+        "branches": 90,
+        "functions": 95,
+        "lines": 95,
+        "statements": 95
+      },
+      "./src/middlewares/": {
+        "branches": 90,
+        "functions": 95,
+        "lines": 95,
+        "statements": 95
+      }
+    },
+    "coverageReporters": [
+      "html",
+      "text",
+      "text-summary",
+      "lcov",
+      "json"
+    ],
+    "verbose": true,
+    "testTimeout": 10000,
+    "maxWorkers": 1
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",

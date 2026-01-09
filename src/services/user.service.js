@@ -1,19 +1,20 @@
-import bcrypt from 'bcryptjs';
-import { prismaClient } from '../app/database.js';
-import { ResponseError } from '../errors/response.error.js';
-import { createNewUser, loginUser } from '../validators/user.validation.js';
-import { validate } from '../validators/validator.js';
-import tokenUtil from '../utils/token.util.js';
+import bcrypt from "bcryptjs";
+import { prismaClient } from "../app/database.js";
+import { ResponseError } from "../errors/response.error.js";
+import { createNewUser, loginUser } from "../validators/user.validation.js";
+import { validate } from "../validators/validator.js";
+import tokenUtil from "../utils/token.util.js";
+import deviceUtil from "../utils/device.util.js";
 
-const login = async (reqBody, req) => {
-  const validatedData = validate(loginUser, reqBody);
+const login = async (reqBody, userAgent, ipAddress) => {
+  reqBody = validate(loginUser, reqBody);
 
+  const { identifier, password } = reqBody;
+
+  // Cari user berdasarkan username atau email
   const user = await prismaClient.user.findFirst({
     where: {
-      OR: [
-        { username: validatedData.username },
-        { email: validatedData.username },
-      ],
+      OR: [{ username: identifier }, { email: identifier }],
     },
     include: {
       userRoles: {
@@ -25,40 +26,80 @@ const login = async (reqBody, req) => {
   });
 
   if (!user) {
-    throw new ResponseError(401, 'Username atau password salah');
+    throw new ResponseError(401, "Username/email atau password salah.");
   }
 
-  const isPasswordValid = await bcrypt.compare(
-    validatedData.password,
-    user.password
-  );
+  // Check apakah user aktif
+  if (!user.is_active) {
+    throw new ResponseError(
+      403,
+      "Akun Anda tidak aktif. Silakan hubungi administrator."
+    );
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
-    throw new ResponseError(401, 'Username atau password salah');
+    throw new ResponseError(401, "Username/email atau password salah.");
   }
 
-  if (!user.is_active) {
-    throw new ResponseError(403, 'Akun Anda belum aktif. Silakan hubungi administrator.');
-  }
+  const roles = user.userRoles.map((ur) => ur.role.name);
 
-  // Create JWT Payload
-  const jwtPayload = {
+  const accessToken = generateAccessToken({
     userId: user.id,
     username: user.username,
     email: user.email,
-    roles: user.userRoles.map((ur) => ur.role.name),
-  };
+    roles: roles,
+  });
 
-  const accessToken = tokenUtil.generateAccessToken(jwtPayload);
-  const refreshToken = await tokenUtil.updateOrCreateSession(user.id, req);
+  const refreshToken = tokenUtil.generateAccessToken();
+  const hashedRefreshToken = tokenUtil.hashRefreshToken(refreshToken);
+
+  const deviceId = deviceUtil.generateDeviceId(userAgent, ipAddress);
+  const deviceName = deviceUtil.parseDeviceName(userAgent);
+
+  await prismaClient.session.upsert({
+    where: {
+      userId: user.id,
+    },
+    update: {
+      refreshToken: hashedRefreshToken,
+      deviceId: deviceId,
+      deviceName: deviceName,
+      userAgent: userAgent || null,
+      ipAddress: ipAddress || null,
+      expiresAt: tokenUtil.getRefreshTokenExpiry(),
+    },
+    create: {
+      userId: user.id,
+      refreshToken: hashedRefreshToken,
+      deviceId: deviceId,
+      deviceName: deviceName,
+      userAgent: userAgent || null,
+      ipAddress: ipAddress || null,
+      expiresAt: getRefreshTokenExpiry(),
+    },
+  });
 
   return {
-    accessToken,
-    refreshToken,
+    message: "Login berhasil",
+    data: {
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        email: user.email,
+        isActive: user.is_active,
+        isVerified: user.is_verified,
+        roles: roles,
+      },
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    },
   };
 };
 
-const registration = async (reqBody, req) => {
+const registration = async (reqBody) => {
   const validatedData = validate(createNewUser, reqBody);
 
   const existingUsername = await prismaClient.user.findUnique({
@@ -81,21 +122,24 @@ const registration = async (reqBody, req) => {
   });
 
   if (existingEmail) {
-    throw new ResponseError(409, `Email ${validatedData.email} sudah digunakan.`);
+    throw new ResponseError(
+      409,
+      `Email ${validatedData.email} sudah digunakan.`
+    );
   }
 
   const hashedPassword = await bcrypt.hash(validatedData.password, 10);
 
   const userRole = await prismaClient.role.findUnique({
     where: {
-      name: 'USER',
+      name: "USER",
     },
   });
 
   if (!userRole) {
     throw new ResponseError(
       500,
-      'Role default USER tidak ditemukan. Silakan seed database terlebih dahulu.'
+      "Role default USER tidak ditemukan. Silakan seed database terlebih dahulu."
     );
   }
 
@@ -110,9 +154,9 @@ const registration = async (reqBody, req) => {
       },
       include: {
         userRoles: {
-            include: { role: true }
-        }
-      }
+          include: { role: true },
+        },
+      },
     });
 
     await tx.userRole.create({
@@ -125,32 +169,19 @@ const registration = async (reqBody, req) => {
     return newUser;
   });
 
-  // Auto-login (Generate Tokens)
-  const jwtPayload = {
-    userId: result.id,
-    username: result.username,
-    email: result.email,
-    roles: ['USER'], // Or fetch from result.userRoles if needed
-  };
-
-  const accessToken = tokenUtil.generateAccessToken(jwtPayload);
-  const refreshToken = await tokenUtil.updateOrCreateSession(result.id, req);
-
   return {
-    message: 'Registrasi user berhasil',
+    message: "Registrasi user berhasil",
     data: {
       user: {
         id: result.id,
         username: result.username,
-        name: result.full_name,
+        full_name: result.full_name,
         email: result.email,
-        isActive: result.is_active,
-        isVerified: result.is_verified,
-        createdAt: result.created_at,
-        updatedAt: result.updated_at,
+        is_active: result.is_active,
+        is_verified: result.is_verified,
+        created_at: result.created_at,
+        updated_at: result.updated_at,
       },
-      accessToken,
-      refreshToken
     },
   };
 };
@@ -163,7 +194,7 @@ const logout = async (userId) => {
   });
 
   if (!session) {
-    throw new ResponseError(404, 'Session not found');
+    throw new ResponseError(404, "Session not found");
   }
 
   await prismaClient.session.delete({
@@ -171,9 +202,9 @@ const logout = async (userId) => {
       userId: userId,
     },
   });
-  
+
   return {
-    message: 'Logout berhasil',
+    message: "Logout berhasil",
   };
 };
 
