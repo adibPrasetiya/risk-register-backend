@@ -1,4 +1,6 @@
-import { extractIpAddress } from '../src/utils/device.util.js';
+import deviceUtil from '../src/utils/device.util.js';
+
+const { extractIpAddress } = deviceUtil;
 
 describe('extractIpAddress', () => {
   test('should extract IP from x-forwarded-for header', () => {
@@ -10,7 +12,7 @@ describe('extractIpAddress', () => {
         remoteAddress: '127.0.0.1'
       }
     };
-    expect(extractIpAddress(req)).toBe('10.0.0.1'); // Assuming it doesn't trim yet or splits correctly
+    expect(extractIpAddress(req)).toBe('10.0.0.1');
   });
 
   test('should extract IP from x-real-ip header if x-forwarded-for is missing', () => {

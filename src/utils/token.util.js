@@ -1,12 +1,11 @@
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import { prismaClient } from '../app/database.js';
-import { parseDeviceName, extractIpAddress, generateDeviceId } from './device.util.js';
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import {
   JWT_SECRET,
   ACCESS_TOKEN_EXPIRY,
   REFRESH_TOKEN_EXPIRY,
-} from '../config/constant.js';
+} from "../config/constant.js";
+import { JwtError } from "../errors/jwt.error.js";
 
 const generateAccessToken = (payload) => {
   return jwt.sign(
@@ -24,63 +23,30 @@ const generateAccessToken = (payload) => {
 };
 
 const generateRefreshToken = () => {
-  return crypto.randomBytes(64).toString('hex');
+  return crypto.randomBytes(64).toString("hex");
 };
 
-const updateOrCreateSession = async (userId, req) => {
-  const userAgent = req.get('User-Agent');
-  const ipAddress = extractIpAddress(req);
-  const refreshToken = generateRefreshToken();
-  const deviceName = parseDeviceName(userAgent);
-  const deviceId = generateDeviceId(userAgent, ipAddress);
-
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-  await prismaClient.session.upsert({
-    where: {
-      userId: userId,
-    },
-    update: {
-      refreshToken: refreshToken,
-      expiresAt: expiresAt,
-      deviceId: deviceId,
-      deviceName: deviceName,
-      userAgent: userAgent,
-      ipAddress: ipAddress,
-    },
-    create: {
-      userId: userId,
-      refreshToken: refreshToken,
-      expiresAt: expiresAt,
-      deviceId: deviceId,
-      deviceName: deviceName,
-      userAgent: userAgent,
-      ipAddress: ipAddress,
-    },
-  });
-
-  return refreshToken;
+const hashRefreshToken = (token) => {
+  return crypto.createHash("sha256").update(token).digest("hex");
 };
 
 const verifyAccessToken = (token) => {
   try {
     return jwt.verify(token, JWT_SECRET);
   } catch (error) {
-    return null;
+    throw new JwtError(403, "Invalid or expired access token");
   }
 };
 
-const decodeToken = (token) => {
-  return jwt.decode(token);
+export const getRefreshTokenExpiry = () => {
+  const expiryDate = new Date();
+  expiryDate.setHours(expiryDate.getHours() + REFRESH_TOKEN_EXPIRY);
+  return expiryDate;
 };
 
 export default {
   generateAccessToken,
   generateRefreshToken,
-  updateOrCreateSession,
   verifyAccessToken,
-  decodeToken,
-  ACCESS_TOKEN_EXPIRY,
-  REFRESH_TOKEN_EXPIRY,
+  hashRefreshToken,
 };
