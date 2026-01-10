@@ -3,7 +3,6 @@ import { app } from '../src/app/server.js';
 import { prismaClient } from '../src/app/database.js';
 import {
   generateString,
-  verifyTokenStructure,
   verifyPasswordIsHashed,
   fixtures,
 } from './helpers/test.helper.js';
@@ -11,6 +10,14 @@ import {
 describe('User Registration API - POST /users', () => {
   // Setup: Clear users before each test
   beforeEach(async () => {
+    // Delete risk related tables first due to FK constraints
+    await prismaClient.riskMonitoringLog.deleteMany();
+    await prismaClient.riskTreatment.deleteMany();
+    await prismaClient.risk.deleteMany();
+    await prismaClient.riskRegister.deleteMany();
+    await prismaClient.riskGovernanceAssignment.deleteMany();
+    await prismaClient.profile.deleteMany();
+
     await prismaClient.session.deleteMany();
     await prismaClient.userRole.deleteMany();
     await prismaClient.user.deleteMany();
@@ -66,7 +73,7 @@ describe('User Registration API - POST /users', () => {
         })
         .expect(201);
 
-      expect(response.body.data.user.full_name).toBe('José García-O\'Brien');
+      expect(response.body.data.user.fullName).toBe('José García-O\'Brien');
     });
   });
 
@@ -521,7 +528,7 @@ describe('User Registration API - POST /users', () => {
           })
           .expect(201);
 
-        expect(response.body.data.user.full_name).toBe('Müller François 李明');
+        expect(response.body.data.user.fullName).toBe('Müller François 李明');
       });
     });
 
@@ -610,7 +617,7 @@ describe('User Registration API - POST /users', () => {
         })
         .expect(409);
 
-      expect(response.body.errors).toContain('sudah digunakan');
+      expect(response.body.errors).toContain('sudah terdaftar');
     });
 
     it('should return 409 for duplicate email', async () => {
@@ -631,7 +638,7 @@ describe('User Registration API - POST /users', () => {
         })
         .expect(409);
 
-      expect(response.body.errors).toContain('sudah digunakan');
+      expect(response.body.errors).toContain('sudah terdaftar');
     });
 
     it('should return 409 for duplicate username (case insensitive)', async () => {
@@ -655,7 +662,7 @@ describe('User Registration API - POST /users', () => {
         })
         .expect(409);
 
-      expect(response.body.errors).toContain('sudah digunakan');
+      expect(response.body.errors).toContain('sudah terdaftar');
     });
 
     it('should return 409 for duplicate email (case insensitive)', async () => {
@@ -679,7 +686,7 @@ describe('User Registration API - POST /users', () => {
         })
         .expect(409);
 
-      expect(response.body.errors).toContain('sudah digunakan');
+      expect(response.body.errors).toContain('sudah terdaftar');
     });
   });
 
@@ -747,7 +754,7 @@ describe('User Registration API - POST /users', () => {
         })
         .expect(201);
 
-      expect(response.body.data.user.is_active).toBe(true);
+      expect(response.body.data.user.is_active).toBe(false);
     });
 
     it('should include timestamps in response', async () => {

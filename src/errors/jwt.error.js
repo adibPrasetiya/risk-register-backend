@@ -1,7 +1,8 @@
-export class JwtError extends Error {
+import { ResponseError } from "./response.error.js";
+
+export class JwtError extends ResponseError {
   constructor(statusCode, message) {
-    super(message);
-    this.statusCode = statusCode;
-    this.name = "ValidationError";
+    super(statusCode, message);
+    this.name = "JwtError";
   }
 }

@@ -13,3 +13,5 @@ export const JWT_REFRESH_SECRET =
   process.env.JWT_REFRESH_SECRET || "refresh_secret_key_change_me";
 export const ACCESS_TOKEN_EXPIRY = NODE_ENV === "production" ? "15m" : "1d";
 export const REFRESH_TOKEN_EXPIRY = NODE_ENV === "production" ? "1d" : "7d";
+
+export const PASSWORD_EXPIRE_DAYS = parseInt(process.env.PASSWORD_EXPIRE_DAYS || "90", 10);

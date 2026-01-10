@@ -1,25 +1,11 @@
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import {
-  JWT_SECRET,
   ACCESS_TOKEN_EXPIRY,
   REFRESH_TOKEN_EXPIRY,
 } from "../config/constant.js";
-import { JwtError } from "../errors/jwt.error.js";
 
-const generateAccessToken = (payload) => {
-  return jwt.sign(
-    {
-      userId: payload.userId || payload.id,
-      username: payload.username,
-      email: payload.email,
-      roles: payload.roles,
-    },
-    JWT_SECRET,
-    {
-      expiresIn: ACCESS_TOKEN_EXPIRY,
-    }
-  );
+const generateAccessToken = () => {
+  return crypto.randomBytes(32).toString("hex");
 };
 
 const generateRefreshToken = () => {
@@ -30,12 +16,20 @@ const hashRefreshToken = (token) => {
   return crypto.createHash("sha256").update(token).digest("hex");
 };
 
-const verifyAccessToken = (token) => {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
-    throw new JwtError(403, "Invalid or expired access token");
-  }
+export const getAccessTokenExpiry = () => {
+  const expiryDate = new Date();
+  // Handle '15m', '1h', etc. from ACCESS_TOKEN_EXPIRY
+  // Simple parsing: assume it ends with 'm' for minutes or 'h' for hours or 'd' for days
+  const timeStr = ACCESS_TOKEN_EXPIRY;
+  const unit = timeStr.slice(-1);
+  const value = parseInt(timeStr.slice(0, -1));
+
+  if (unit === 'm') expiryDate.setMinutes(expiryDate.getMinutes() + value);
+  else if (unit === 'h') expiryDate.setHours(expiryDate.getHours() + value);
+  else if (unit === 'd') expiryDate.setDate(expiryDate.getDate() + value);
+  else expiryDate.setMinutes(expiryDate.getMinutes() + 15); // Default fallback
+
+  return expiryDate;
 };
 
 export const getRefreshTokenExpiry = () => {
@@ -52,6 +46,7 @@ export const getRefreshTokenExpiry = () => {
 export default {
   generateAccessToken,
   generateRefreshToken,
-  verifyAccessToken,
   hashRefreshToken,
+  getAccessTokenExpiry,
+  getRefreshTokenExpiry,
 };

@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,6 +14,7 @@ model User {
   id                   String     @id @default(uuid())
   username             String     @unique @db.VarChar(255)
   email                String     @unique @db.VarChar(255)
+  full_name            String?    @db.VarChar(255)
   password             String     @db.VarChar(255)
   is_active            Boolean    @default(false)
   is_verified          Boolean    @default(false)
@@ -28,23 +26,54 @@ model User {
   updated_at           DateTime   @updatedAt
   userRoles            UserRole[]
   sessions             Session[]
-  profile              Profile?
+  profile              Profile?   @relation("UserProfile")
+
+  // Password reset workflow (user request -> admin validation -> completion)
+  passwordResetRequests           PasswordResetRequest[] @relation("PasswordResetTargetUser")
+  validatedPasswordResetRequests  PasswordResetRequest[] @relation("PasswordResetValidatedBy")
+
+  // Risk Management (Permenlu 10/2017) & Security Risk (Permenlu 8/2019)
+  createdRiskRegisters RiskRegister[]             @relation("RiskRegisterCreatedBy")
+  ownedRisks           Risk[]                     @relation("RiskOwner")
+  riskTreatmentsPIC    RiskTreatment[]            @relation("RiskTreatmentPIC")
+  riskGovernance       RiskGovernanceAssignment[] @relation("RiskGovernanceUser")
 
   @@index([email])
   @@index([username])
   @@map("users")
 }
 
-model Profile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fullName  String?  @db.VarChar(255)
-  bio       String?  @db.Text
-  avatar    String?  @db.VarChar(255)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// NEW: Master Unit Kerja
+model UnitKerja {
+  id        String    @id @default(cuid())
+  kode      String?   @unique @db.VarChar(50)
+  nama      String    @db.VarChar(255)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
+  profiles  Profile[]
+
+  @@index([nama])
+  @@map("unit_kerja")
+}
+
+model Profile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation("UserProfile", fields: [userId], references: [id], onDelete: Cascade)
+
+  // NEW fields
+  unitKerjaId String?
+  unitKerja   UnitKerja? @relation(fields: [unitKerjaId], references: [id], onDelete: SetNull)
+  jabatan     String?  @db.VarChar(255)
+
+  fullName   String?  @db.VarChar(255)
+  bio        String?  @db.Text
+  avatar     String?  @db.VarChar(255)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([unitKerjaId])
   @@map("profiles")
 }
 
@@ -83,6 +112,8 @@ model Session {
   userId       String   @unique
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshToken String   @unique @db.VarChar(500)
+  accessToken  String?  @unique @db.VarChar(500)
+  accessTokenExpiresAt DateTime?
   deviceId     String   @db.VarChar(255)
   deviceName   String?  @db.VarChar(255)
   userAgent    String?  @db.Text
@@ -94,4 +125,220 @@ model Session {
   @@index([refreshToken])
   @@index([expiresAt])
   @@map("sessions")
+}
+
+enum PasswordResetStatus {
+  PENDING
+  APPROVED
+  COMPLETED
+  REJECTED
+}
+
+model PasswordResetRequest {
+  id            String              @id @default(uuid())
+  userId        String?
+  user          User?               @relation("PasswordResetTargetUser", fields: [userId], references: [id], onDelete: SetNull)
+  identifier    String              @db.VarChar(255)
+  status        PasswordResetStatus @default(PENDING)
+  requestedAt   DateTime            @default(now())
+
+  validatedById String?
+  validatedBy   User?               @relation("PasswordResetValidatedBy", fields: [validatedById], references: [id], onDelete: SetNull)
+  validatedAt   DateTime?
+  completedAt   DateTime?
+  note          String?             @db.Text
+
+  @@index([status])
+  @@index([requestedAt])
+  @@map("password_reset_requests")
+}
+
+// --- Risk Management & Security Risk (Permenlu 10/2017 & Permenlu 8/2019) ---
+
+enum RiskRegisterType {
+  MANAJEMEN_RISIKO // Permenlu 10/2017
+  RISIKO_KEAMANAN  // Permenlu 8/2019
+}
+
+enum RiskPeriod {
+  TAHUNAN
+  SEMESTER_1
+  SEMESTER_2
+}
+
+enum RiskLevel {
+  RENDAH
+  SEDANG
+  TINGGI
+  EKSTREM
+}
+
+enum RiskCategory {
+  STRATEGIS
+  OPERASIONAL
+  KEUANGAN
+  KEPATUHAN
+  REPUTASI
+  LAINNYA
+}
+
+enum SecurityObject {
+  PERSONEL
+  TAMU
+  ASET_FISIK
+  INFORMASI
+}
+
+enum SecurityThreatType {
+  KRIMINALITAS
+  TERORISME
+  BENCANA_ALAM
+  PERANG
+  KONFLIK_SOSIAL
+  INSTABILITAS_POLITIK
+  PENYADAPAN
+  PENGGALANGAN
+  KEJAHATAN_SIBER
+  LAINNYA
+}
+
+enum RiskTreatmentStrategy {
+  HINDARI
+  KURANGI
+  PINDAHKAN
+  TERIMA
+}
+
+enum RiskTreatmentStatus {
+  DIRENCANAKAN
+  BERJALAN
+  SELESAI
+  DITUNDA
+  DIBATALKAN
+}
+
+enum RiskGovernanceRole {
+  KOMITE_MANAJEMEN_RISIKO
+  PEMILIK_RISIKO
+  PENGAWAS_KEPATUHAN_MANAJEMEN_RISIKO
+  KOMITE_PENGAMANAN
+  TIM_PENGAMANAN
+}
+
+model RiskRegister {
+  id           String           @id @default(uuid())
+  registerType RiskRegisterType
+  year         Int
+  period       RiskPeriod       @default(TAHUNAN)
+  unitKerja    String           @db.VarChar(255)
+  judul        String           @db.VarChar(255)
+  konteks      String?          @db.Text
+  status       String           @default("DRAFT") @db.VarChar(50)
+
+  createdById  String
+  createdBy    User             @relation("RiskRegisterCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  risks        Risk[]
+
+  @@index([registerType, year, period])
+  @@index([unitKerja])
+  @@map("risk_registers")
+}
+
+model Risk {
+  id               String               @id @default(uuid())
+  registerId       String
+  register         RiskRegister         @relation(fields: [registerId], references: [id], onDelete: Cascade)
+
+  kategori         RiskCategory         @default(LAINNYA)
+
+  // Untuk RISIKO_KEAMANAN (Permenlu 8/2019)
+  obyekPengamanan  SecurityObject?
+  jenisAncaman     SecurityThreatType?
+
+  tujuan           String?              @db.Text
+  kegiatan         String?              @db.Text
+
+  pernyataanRisiko String               @db.Text
+  penyebab         String?              @db.Text
+  dampak           String?              @db.Text
+  kontrolEksisting String?              @db.Text
+
+  likelihood       Int
+  impact           Int
+  score            Int
+  level            RiskLevel
+
+  ownerId          String?
+  owner            User?                @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  treatments       RiskTreatment[]
+  monitoringLogs   RiskMonitoringLog[]
+
+  @@index([registerId])
+  @@index([level])
+  @@map("risks")
+}
+
+model RiskTreatment {
+  id            String               @id @default(uuid())
+  riskId        String
+  risk          Risk                 @relation(fields: [riskId], references: [id], onDelete: Cascade)
+
+  strategi      RiskTreatmentStrategy
+  uraian        String               @db.Text
+  picId         String?
+  pic           User?                @relation("RiskTreatmentPIC", fields: [picId], references: [id], onDelete: SetNull)
+
+  targetMulai   DateTime?
+  targetSelesai DateTime?
+  status        RiskTreatmentStatus  @default(DIRENCANAKAN)
+  sumberDaya    String?              @db.Text
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([riskId])
+  @@index([status])
+  @@map("risk_treatments")
+}
+
+model RiskMonitoringLog {
+  id                 String    @id @default(uuid())
+  riskId             String
+  risk               Risk      @relation(fields: [riskId], references: [id], onDelete: Cascade)
+
+  catatan            String?   @db.Text
+  status             String    @default("OPEN") @db.VarChar(50)
+
+  residualLikelihood Int?
+  residualImpact     Int?
+  residualScore      Int?
+  residualLevel      RiskLevel?
+
+  createdAt          DateTime  @default(now())
+
+  @@index([riskId])
+  @@map("risk_monitoring_logs")
+}
+
+model RiskGovernanceAssignment {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation("RiskGovernanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  role      RiskGovernanceRole
+  unitKerja String?            @db.VarChar(255)
+
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@unique([userId, role, unitKerja])
+  @@index([role])
+  @@map("risk_governance_assignments")
 }

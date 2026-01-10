@@ -160,6 +160,52 @@ Coverage report akan tersedia di folder `coverage/`.
 
 Lihat [TESTING.md](./TESTING.md) untuk panduan lengkap menulis tests.
 
+
+## 🔌 API Endpoints
+
+> Semua endpoint di bawah prefix yang sama dengan router saat ini:
+> - **Public** (tanpa token)
+> - **API** (butuh header `Authorization: Bearer <access_token>`)
+
+### Public (tanpa autentikasi)
+
+- `POST /users` — Registrasi user
+- `POST /users/login` — Login (menghasilkan access_token + refresh token via cookie)
+
+### API (butuh autentikasi)
+
+#### User
+
+- `DELETE /users/logout`
+- `PATCH /users/current`
+- `PATCH /users/password`
+- `POST /users/2fa/generate`
+- `POST /users/2fa/enable`
+- `POST /users/2fa/disable`
+
+#### Risk Register (Permenlu 10/2017 & Permenlu 8/2019)
+
+- `GET /risk-registers` — List register (filter: `registerType`, `year`, `period`, `unitKerja`)
+- `POST /risk-registers` — Buat register baru
+- `GET /risk-registers/:registerId` — Detail register + daftar Risiko
+- `POST /risk-registers/:registerId/risks` — Tambah Risiko ke register
+- `PATCH /risks/:riskId` — Update Risiko (otomatis hitung ulang skor & level)
+- `POST /risks/:riskId/treatments` — Tambah rencana penanganan Risiko
+- `POST /risks/:riskId/monitoring` — Tambah log monitoring/reviu (opsional residual score)
+
+#### Struktur / Governance
+
+- `GET /risk-governance` — List penugasan governance (filter: `role`, `unitKerja`)
+- `POST /risk-governance` — Buat penugasan governance (**admin only**)
+
+### Skala skor & level Risiko
+
+- **MANAJEMEN_RISIKO** (Permenlu 10/2017): `score = likelihood(1..3) x impact(1..5)` → rentang 1..15  
+  Mapping level: 1–2 **RENDAH**, 3–9 **SEDANG**, 10–15 **TINGGI**
+- **RISIKO_KEAMANAN** (Permenlu 8/2019): `score = likelihood(1..5) x impact(1..5)` → rentang 1..25  
+  Mapping level: 1–4 **RENDAH**, 5–9 **SEDANG**, 10–14 **TINGGI**, 15–25 **EKSTREM**
+
+
 ## 📁 Struktur Project
 
 ```

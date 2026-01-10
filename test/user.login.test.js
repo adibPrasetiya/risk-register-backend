@@ -4,7 +4,6 @@ import { prismaClient } from '../src/app/database.js';
 import bcrypt from 'bcryptjs';
 import {
   createTestUser,
-  verifyTokenStructure,
   extractCookie,
   verifyCookieAttributes,
   verifySessionState,
@@ -14,6 +13,13 @@ import tokenUtil from '../src/utils/token.util.js';
 
 describe('User Login API - POST /users/login', () => {
   beforeEach(async () => {
+    await prismaClient.riskMonitoringLog.deleteMany();
+    await prismaClient.riskTreatment.deleteMany();
+    await prismaClient.risk.deleteMany();
+    await prismaClient.riskRegister.deleteMany();
+    await prismaClient.riskGovernanceAssignment.deleteMany();
+    await prismaClient.profile.deleteMany();
+
     await prismaClient.session.deleteMany();
     await prismaClient.userRole.deleteMany();
     await prismaClient.user.deleteMany();
@@ -36,6 +42,8 @@ describe('User Login API - POST /users/login', () => {
         .expect(200);
 
       expect(response.body.data).toHaveProperty('accessToken');
+      // Verify opaque token (hex string)
+      expect(response.body.data.accessToken).toMatch(/^[0-9a-fA-F]+$/);
 
       const cookies = response.headers['set-cookie'];
       expect(cookies).toBeDefined();
@@ -50,6 +58,7 @@ describe('User Login API - POST /users/login', () => {
       });
       expect(session).toBeDefined();
       expect(session.refreshToken).toBeDefined();
+      expect(session.accessToken).toBe(response.body.data.accessToken);
     });
 
     it('should login successfully with valid email and password', async () => {
@@ -453,7 +462,7 @@ describe('User Login API - POST /users/login', () => {
   });
 
   describe('Token Validation', () => {
-    it('should return access token containing userId', async () => {
+    it('should return access token as string', async () => {
       const { user, plainPassword } = await createTestUser();
 
       const response = await request(app)
@@ -464,79 +473,10 @@ describe('User Login API - POST /users/login', () => {
         })
         .expect(200);
 
-      const decoded = verifyTokenStructure(response.body.data.accessToken, {
-        userId: user.id,
-      });
-      expect(decoded.userId).toBe(user.id);
+      expect(typeof response.body.data.accessToken).toBe('string');
     });
 
-    it('should return access token containing username', async () => {
-      const { user, plainPassword } = await createTestUser();
 
-      const response = await request(app)
-        .post('/users/login')
-        .send({
-          username: user.username,
-          password: plainPassword,
-        })
-        .expect(200);
-
-      const decoded = verifyTokenStructure(response.body.data.accessToken);
-      expect(decoded.username).toBe(user.username);
-    });
-
-    it('should return access token containing email', async () => {
-      const { user, plainPassword } = await createTestUser();
-
-      const response = await request(app)
-        .post('/users/login')
-        .send({
-          username: user.username,
-          password: plainPassword,
-        })
-        .expect(200);
-
-      const decoded = verifyTokenStructure(response.body.data.accessToken);
-      expect(decoded.email).toBe(user.email);
-    });
-
-    it('should return access token containing roles array', async () => {
-      const { user, plainPassword } = await createTestUser();
-
-      const response = await request(app)
-        .post('/users/login')
-        .send({
-          username: user.username,
-          password: plainPassword,
-        })
-        .expect(200);
-
-      const decoded = verifyTokenStructure(response.body.data.accessToken);
-      expect(Array.isArray(decoded.roles)).toBe(true);
-      expect(decoded.roles).toContain('USER');
-    });
-
-    it('should return access token with correct expiry time', async () => {
-      const { user, plainPassword } = await createTestUser();
-
-      const beforeLogin = Math.floor(Date.now() / 1000);
-
-      const response = await request(app)
-        .post('/users/login')
-        .send({
-          username: user.username,
-          password: plainPassword,
-        })
-        .expect(200);
-
-      const decoded = verifyTokenStructure(response.body.data.accessToken);
-
-      const tokenLifetime = decoded.exp - decoded.iat;
-      const expectedLifetime =
-        process.env.NODE_ENV === 'production' ? 15 * 60 : 24 * 60 * 60;
-
-      expect(Math.abs(tokenLifetime - expectedLifetime)).toBeLessThan(5);
-    });
   });
 
   describe('Validation Errors', () => {
