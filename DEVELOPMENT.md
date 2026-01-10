@@ -169,11 +169,7 @@ const login = async (credentials) => {
   }
   
   // Generate token
-  const token = jwt.sign(
-    { id: user.id, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: '24h' }
-  );
+  const token = crypto.randomBytes(32).toString('hex');
   
   return { token, user };
 };
@@ -472,22 +468,7 @@ const user = await prisma.user.findUnique({
 // await prisma.$queryRaw(`SELECT * FROM users WHERE email = '${email}'`);
 ```
 
-### 4. JWT Security
-
-```javascript
-// Use strong secret
-JWT_SECRET=your-super-secret-key-min-32-chars
-
-// Set expiration
-const token = jwt.sign(payload, secret, { 
-  expiresIn: '24h' 
-});
-
-// Verify tokens
-const decoded = jwt.verify(token, secret);
-```
-
-### 5. Environment Variables
+### 4. Environment Variables
 
 ```javascript
 // Never commit .env
