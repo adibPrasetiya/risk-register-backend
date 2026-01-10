@@ -244,11 +244,12 @@ risk-register/
 └── nodemon.json             # Nodemon configuration
 ```
 
-## 📖 Dokumentasi Tambahan
+## Documentation
 
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Panduan kontribusi dan commit conventions
-- [TESTING.md](./TESTING.md) - Panduan testing lengkap
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Development workflow dan best practices
+- [Development Guide](DEVELOPMENT.md)
+- [API Documentation](API.md)
+- [Contributing](CONTRIBUTING.md)
+- [Testing Guide](TESTING.md)
 
 ## 📝 License
 
